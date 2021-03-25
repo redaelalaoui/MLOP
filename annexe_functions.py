@@ -111,4 +111,4 @@ def compute_price_premium(m, sigma):
     d2 = m - sigma/2
 
     call = (np.exp(m*sigma) * si.norm.cdf(d1, 0.0, 1.0) - si.norm.cdf(d2, 0.0, 1.0))
-    return (call - max(F_K.all() - 1, 0))/sigma
+    return (call - np.maximum(F_K - 1, 0))/sigma

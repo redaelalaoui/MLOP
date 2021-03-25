@@ -74,8 +74,7 @@ if __name__ == "__main__":
 
     # PRICE PREMIUM APPROACH
     # Train set
-    price_premium_data(m_range=(-2., 2.), sigma_range=(0.1, 0.9), kind_of_data='train')
+    price_premium_data(m_range=(-3., 3.), sigma_range=(0.01, 1.), kind_of_data='train')
 
     # Test set
-    price_premium_data(m_range=(-2., 2.), sigma_range=(0.1, 0.9), kind_of_data='test')
-
+    price_premium_data(m_range=(-3., 3.), sigma_range=(0.01, 1.), kind_of_data='test')
