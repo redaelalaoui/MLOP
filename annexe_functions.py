@@ -57,13 +57,12 @@ def k_s_prime_RBF(x_train: np.ndarray, x_test: np.ndarray,
               optimal_kernel: kernels.Product, column: int = 0) -> np.ndarray:
 
     k_s = optimal_kernel(x_test, x_train)
-    l = optimal_kernel.k2.length_scale
-    fact = optimal_kernel.k1.constant_value
-
+    l = optimal_kernel.length_scale
+    print(l)
     x_train = x_train[:, column].reshape((-1, 1))
     x_test = x_test[:, column].reshape((-1, 1))
 
-    return fact * (x_train.T - x_test) * k_s / l ** 2
+    return (x_train.T - x_test) * k_s / l[column] ** 2
 
 
 def k_s_prime_quadra(x_train: np.ndarray, x_test: np.ndarray,
@@ -72,12 +71,11 @@ def k_s_prime_quadra(x_train: np.ndarray, x_test: np.ndarray,
     k_s = optimal_kernel(x_test, x_train)
     l = optimal_kernel.k2.length_scale
     alpha_quadra = optimal_kernel.k2.alpha
-    fact = optimal_kernel.k1.constant_value
 
     x_train = x_train[:, column].reshape((-1, 1))
     x_test = x_test[:, column].reshape((-1, 1))
 
-    return fact * (x_train.T - x_test) * k_s / (l ** 2 * (1 + (x_train.T - x_test) ** 2 / (2 * alpha_quadra * l ** 2)))
+    return (x_train.T - x_test) * k_s / (l ** 2 * (1 + (x_train.T - x_test) ** 2 / (2 * alpha_quadra * l ** 2)))
 
 
 def kernel_derivative(x_train: np.ndarray, x_test: np.ndarray, y_train: np.ndarray,
@@ -93,7 +91,7 @@ def kernel_derivative(x_train: np.ndarray, x_test: np.ndarray, y_train: np.ndarr
         cholesky = sp.linalg.cho_factor(k_y)
         alpha_p = sp.linalg.cho_solve(np.transpose(cholesky), y_train)
 
-        f_prime = np.dot(k_s_prime(x_train, x_test, optimal_kernel, column=column), alpha_p)
+        f_prime = np.dot(k_s_prime(x_train, x_test, optimal_kernel, column), alpha_p)
 
         return f_prime
 
