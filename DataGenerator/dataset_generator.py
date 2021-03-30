@@ -12,7 +12,7 @@ def naive_approach(spot_range: Tuple[float, float], strike_range: Tuple[float, f
                    vol_range: Tuple[float, float], data_size: int = 5000, kind_of_data: str = 'train') -> NoReturn:
 
     # Initialization
-    filepath = "C:/Users/Edgelab/PycharmProjects/pythonProject/VanillaOptions/Data/"
+    filepath = "C:/Users/Edgelab/PycharmProjects/VanillaOptions/Data/"
     n_dis = 1000
 
     all_spot = np.linspace(spot_range[0], spot_range[1], n_dis)
@@ -40,11 +40,11 @@ def naive_approach(spot_range: Tuple[float, float], strike_range: Tuple[float, f
 def price_premium_data(m_range: Tuple[float, float], sigma_range: Tuple[float, float],
                        kind_of_data: str = 'train') -> NoReturn:
     # Initialization
-    filepath = "C:/Users/Edgelab/PycharmProjects/pythonProject/VanillaOptions/Data/"
+    filepath = "C:/Users/Edgelab/PycharmProjects/VanillaOptions/Data/"
     x_data, y_data = [], []
 
-    list_m = np.linspace(m_range[0], m_range[1], 70)
-    list_sigma = np.linspace(sigma_range[0], sigma_range[1], 70)
+    list_m = np.linspace(m_range[0], m_range[1], 100)
+    list_sigma = np.linspace(sigma_range[0], sigma_range[1], 100)
 
     # Compute data
     for m in list_m:
@@ -65,16 +65,16 @@ if __name__ == "__main__":
     # NAIVE APPROACH
     # Train set
     naive_approach(spot_range=(40, 140), strike_range=(60, 110),
-                   rate_range=(0.01, 0.1), maturity_range=(1/12, 3),
-                   vol_range=(0.05, 0.15), data_size=5000, kind_of_data='train')
+                   rate_range=(0.001, 0.1), maturity_range=(1/12, 3),
+                   vol_range=(0.0005, 1.), data_size=5000, kind_of_data='train')
     # Test set
     naive_approach(spot_range=(50, 120), strike_range=(60, 110),
-                   rate_range=(0.01, 0.1), maturity_range=(1/12, 3),
-                   vol_range=(0.05, 0.15), data_size=5000, kind_of_data='test')
+                   rate_range=(0.001, 0.1), maturity_range=(1/12, 3),
+                   vol_range=(0.0005, 1.), data_size=5000, kind_of_data='test')
 
     # PRICE PREMIUM APPROACH
     # Train set
-    price_premium_data(m_range=(-3., 3.), sigma_range=(0.01, 1.), kind_of_data='train')
+    price_premium_data(m_range=(-3., 3.), sigma_range=(0.15, 0.85), kind_of_data='train')
 
     # Test set
-    price_premium_data(m_range=(-3., 3.), sigma_range=(0.01, 1.), kind_of_data='test')
+    price_premium_data(m_range=(-5., 5.), sigma_range=(0.001, 0.98), kind_of_data='test')
