@@ -1,0 +1,14 @@
+# Ignore results (pdf figures)
+*.pdf
+
+# Ignore notebooks
+*.ipynb
+
+# Ignore data sets
+*.csv
+
+# Ignore pycache
+*__pycache__/
+
+vanilla
+.idea
