@@ -7,13 +7,13 @@ from BlackScholes import bsformula
 from annexe_functions import compute_price_premium
 
 
-def naive_approach(spot_range: Tuple[float, float], strike_range: Tuple[float, float],
-                   rate_range: Tuple[float, float], maturity_range: Tuple[float, float],
-                   vol_range: Tuple[float, float], data_size: int = 5000, kind_of_data: str = 'train') -> NoReturn:
+def black_scholes_datasets(spot_range: Tuple[float, float], strike_range: Tuple[float, float],
+                           rate_range: Tuple[float, float], maturity_range: Tuple[float, float],
+                           vol_range: Tuple[float, float], data_size: int = 5000, kind_of_data: str = 'train') -> NoReturn:
 
     # Initialization
     filepath = "C:/Users/Edgelab/PycharmProjects/VanillaOptions/Data/"
-    n_dis = 1000
+    n_dis = 5
 
     all_spot = np.linspace(spot_range[0], spot_range[1], n_dis)
     all_strikes = np.linspace(strike_range[0], strike_range[1], n_dis)
@@ -21,60 +21,63 @@ def naive_approach(spot_range: Tuple[float, float], strike_range: Tuple[float, f
     all_maturities = np.linspace(maturity_range[0], maturity_range[1], n_dis)
     all_volatilities = np.linspace(vol_range[0], vol_range[1], n_dis)
 
-    # Compute data
-    x_data = [[all_spot[np.random.randint(n_dis)], all_strikes[np.random.randint(n_dis)],
-               all_maturities[np.random.randint(n_dis)], all_rates[np.random.randint(n_dis)],
-               all_volatilities[np.random.randint(n_dis)]] for _ in range(data_size)]
+    # Inputs
+    # Naive variables
+    x_naive = np.array([[all_spot[np.random.randint(n_dis)], all_strikes[np.random.randint(n_dis)],
+                       all_maturities[np.random.randint(n_dis)], all_rates[np.random.randint(n_dis)],
+                       all_volatilities[np.random.randint(n_dis)]] for _ in range(data_size)])
 
-    y_data = [bsformula(x_row[0], x_row[1], x_row[2], x_row[3], x_row[4], option='call')[0] for x_row in x_data]
+    # Reduced variables
+    sigma = x_naive[:, 4] * np.sqrt(x_naive[:, 2])
+    m = np.log(x_naive[:, 0] * np.exp(x_naive[:, 3] * x_naive[:, 2])/x_naive[:, 1])/sigma
 
-    # Store data
-    df = pd.DataFrame(x_data)
+    x_reduced = np.array([[m[i], sigma[i]] for i in range(len(m))])
+
+    # Outputs
+    # Call price
+    y_price = [bsformula(x_row[0], x_row[1], x_row[2], x_row[3], x_row[4], option='call')[0] for x_row in x_naive]
+
+    # Price premium
+    y_pp = compute_price_premium(m, sigma)
+
+    # Input: Naive variables
+    # Output: Price premium
+    df = pd.DataFrame(x_naive)
     df.columns = ['S', 'K', 'tau', 'r', 'sigma']
-    df['Call price'] = y_data
-    df.to_csv(filepath + f"{kind_of_data}_naive_approach.csv", sep=',', index=False)
-    print(f'Black and Scholes {kind_of_data} dataset: created.')
+    df['Price Premium'] = y_pp
+    df.to_csv(filepath + f"{kind_of_data}_naive_pp.csv", sep=',', index=False)
 
-
-# PRICE PREMIUM APPROACH
-def price_premium_data(m_range: Tuple[float, float], sigma_range: Tuple[float, float],
-                       kind_of_data: str = 'train') -> NoReturn:
-    # Initialization
-    filepath = "C:/Users/Edgelab/PycharmProjects/VanillaOptions/Data/"
-    x_data, y_data = [], []
-
-    list_m = np.linspace(m_range[0], m_range[1], 100)
-    list_sigma = np.linspace(sigma_range[0], sigma_range[1], 100)
-
-    # Compute data
-    for m in list_m:
-        for sigma in list_sigma:
-            x_data.append([m, sigma])
-            y_data.append(compute_price_premium(m, sigma))
-
-    # Store data
-    df = pd.DataFrame(x_data)
+    # Input: Reduced variables
+    # Output: Price premium
+    df = pd.DataFrame(x_reduced)
     df.columns = ['m', 'sigma']
-    df['Price Premium'] = y_data
-    df.to_csv(filepath + f"{kind_of_data}_price_premium.csv", sep=',', index=False)
-    print(f'Price premium {kind_of_data} dataset: created.')
+    df['Price Premium'] = y_pp
+    df.to_csv(filepath + f"{kind_of_data}_reduced_pp.csv", sep=',', index=False)
+
+    # Input: Naive variables
+    # Output: Call price
+    df = pd.DataFrame(x_naive)
+    df.columns = ['S', 'K', 'tau', 'r', 'sigma']
+    df['Call price'] = y_price
+    df.to_csv(filepath + f"{kind_of_data}_naive_price.csv", sep=',', index=False)
+
+    # Input: Reduced variables
+    # Output: Call price
+    df = pd.DataFrame(x_reduced)
+    df.columns = ['m', 'sigma']
+    df['Call price'] = y_price
+    df.to_csv(filepath + f"{kind_of_data}_reduced_price.csv", sep=',', index=False)
 
 
 if __name__ == "__main__":
 
-    # NAIVE APPROACH
+    # TWO APPROACHES
     # Train set
-    naive_approach(spot_range=(40, 140), strike_range=(60, 110),
-                   rate_range=(0.001, 0.1), maturity_range=(1/12, 3),
-                   vol_range=(0.0005, 1.), data_size=5000, kind_of_data='train')
-    # Test set
-    naive_approach(spot_range=(50, 120), strike_range=(60, 110),
-                   rate_range=(0.001, 0.1), maturity_range=(1/12, 3),
-                   vol_range=(0.0005, 1.), data_size=5000, kind_of_data='test')
-
-    # PRICE PREMIUM APPROACH
-    # Train set
-    price_premium_data(m_range=(-3., 3.), sigma_range=(0.15, 0.85), kind_of_data='train')
+    two_approaches(spot_range=(40, 140), strike_range=(95, 105),
+                   rate_range=(0.001, 0.15), maturity_range=(1/12, 4),
+                   vol_range=(0.03, 0.4), data_size=5000, kind_of_data='train')
 
     # Test set
-    price_premium_data(m_range=(-5., 5.), sigma_range=(0.001, 0.98), kind_of_data='test')
+    two_approaches(spot_range=(40, 140), strike_range=(95, 105),
+                   rate_range=(0.001, 0.15), maturity_range=(1/12, 4),
+                   vol_range=(0.03, 0.4), data_size=5000, kind_of_data='test')
