@@ -73,11 +73,11 @@ if __name__ == "__main__":
 
     # TWO APPROACHES
     # Train set
-    two_approaches(spot_range=(40, 140), strike_range=(95, 105),
-                   rate_range=(0.001, 0.15), maturity_range=(1/12, 4),
-                   vol_range=(0.03, 0.4), data_size=5000, kind_of_data='train')
+    black_scholes_datasets(spot_range=(40, 140), strike_range=(95, 105),
+                           rate_range=(0.001, 0.15), maturity_range=(1/12, 4),
+                           vol_range=(0.03, 0.4), data_size=5000, kind_of_data='train')
 
     # Test set
-    two_approaches(spot_range=(40, 140), strike_range=(95, 105),
-                   rate_range=(0.001, 0.15), maturity_range=(1/12, 4),
-                   vol_range=(0.03, 0.4), data_size=5000, kind_of_data='test')
+    black_scholes_datasets(spot_range=(40, 140), strike_range=(95, 105),
+                           rate_range=(0.001, 0.15), maturity_range=(1/12, 4),
+                           vol_range=(0.03, 0.4), data_size=5000, kind_of_data='test')
