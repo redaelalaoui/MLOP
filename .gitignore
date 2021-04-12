@@ -8,7 +8,7 @@
 *.csv
 
 # Ignore pycache
-*__pycache__/
+*.pyc
 
 vanilla
 .idea
