@@ -13,7 +13,7 @@ def black_scholes_datasets(spot_range: Tuple[float, float], strike_range: Tuple[
 
     # Initialization
     filepath = "C:/Users/Edgelab/PycharmProjects/VanillaOptions/Data/"
-    n_dis = 5
+    n_dis = 5000
 
     all_spot = np.linspace(spot_range[0], spot_range[1], n_dis)
     all_strikes = np.linspace(strike_range[0], strike_range[1], n_dis)

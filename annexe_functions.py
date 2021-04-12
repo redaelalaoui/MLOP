@@ -58,11 +58,14 @@ def k_s_prime_RBF(x_train: np.ndarray, x_test: np.ndarray,
 
     k_s = optimal_kernel(x_test, x_train)
     l = optimal_kernel.length_scale
-    print(l)
+
     x_train = x_train[:, column].reshape((-1, 1))
     x_test = x_test[:, column].reshape((-1, 1))
 
-    return (x_train.T - x_test) * k_s / l[column] ** 2
+    if type(l) is np.ndarray:
+        return (x_train.T - x_test) * k_s / l[column] ** 2
+    else:
+        return (x_train.T - x_test) * k_s / l ** 2
 
 
 def k_s_prime_quadra(x_train: np.ndarray, x_test: np.ndarray,
