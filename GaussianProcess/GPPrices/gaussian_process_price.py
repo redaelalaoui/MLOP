@@ -52,9 +52,10 @@ class GaussianProcessPrice:
         if self.standardization:
             scaler, x_train, y_train, x_test, y_test = standardize_data(x_train, y_train, x_test, y_test)
             self.gpr = make_pipeline(StandardScaler(), GaussianProcessRegressor(kernel=self.selected_kernel,
-                                                                                random_state=0, normalize_y=True, n_restarts_optimizer=1))
+                                                                                random_state=0, normalize_y=True,
+                                                                                n_restarts_optimizer=20))
         else:
-            self.gpr = GaussianProcessRegressor(kernel=self.selected_kernel, random_state=0, n_restarts_optimizer=1)
+            self.gpr = GaussianProcessRegressor(kernel=self.selected_kernel, random_state=0, n_restarts_optimizer=20)
 
         # Trains the model
         t0 = datetime.now()
