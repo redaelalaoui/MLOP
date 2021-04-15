@@ -6,7 +6,8 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from GaussianProcess.GPGreeks.general_greeks import GaussianProcessGreeks
+from GaussianProcess.GPGreeks.gaussian_process_greeks import GaussianProcessGreeks
+from GaussianProcess.GPPrices.gaussian_process_price import GaussianProcessPrice
 
 warnings.filterwarnings('ignore')
 
