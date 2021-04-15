@@ -1,11 +1,13 @@
 # Ignore results (pdf figures)
 *.pdf
+*.png
 
 # Ignore notebooks
 *.ipynb
 
 # Ignore data sets
 *.csv
+*.xlsx
 
 # Ignore pycache
 *.pyc
