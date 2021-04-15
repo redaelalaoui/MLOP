@@ -1,18 +1,18 @@
 import warnings
+from typing import NoReturn
 
 import matplotlib.pyplot as plt
 import numpy as np
-import seaborn as sns
 import pandas as pd
+import seaborn as sns
 
-from ExperiencePlan.experience_plan_function import experience_plan
 from GaussianProcess.GPGreeks.general_greeks import GaussianProcessGreeks
 
 warnings.filterwarnings('ignore')
 
 
 # Plot the MSE and the training time vs. training size
-def diagnostics_metrics(title, df_experiments, hue=None, style=None):
+def diagnostics_metrics(title: str, df_experiments: pd.DataFrame, hue: str = None, style: str = None) -> NoReturn:
     sns.set_style("whitegrid")
     fig, axs = plt.subplots(figsize=(10, 4), ncols=2)
     # 1 - MSE
@@ -28,9 +28,11 @@ def diagnostics_metrics(title, df_experiments, hue=None, style=None):
 
 
 # Plot the Call price / Price premium (and the error) vs. moneyness
-def diagnostic_function(price_vs_pp, title, tau=2, sigma_tau=0.25,
-                        stand=False, naive=False, price=False,
-                        model=None, model_ITM=None, model_OTM=None):
+def diagnostic_function(price_vs_pp: str, title: str, tau: float = 2., sigma_tau: float = 0.25,
+                        stand: bool = False, naive: bool = False, price: bool = False,
+                        model: GaussianProcessPrice = None,
+                        model_ITM: GaussianProcessPrice = None,
+                        model_OTM: GaussianProcessPrice = None) -> NoReturn:
 
     m_test, y_test, y_pred = GaussianProcessGreeks(model=model, model_ITM=model_ITM, model_OTM=model_OTM). \
         function(stand=stand, naive=naive, price=price, K=100, r=0.05, tau=tau,
@@ -58,7 +60,11 @@ def diagnostic_function(price_vs_pp, title, tau=2, sigma_tau=0.25,
 
 
 # Plot the Delta vs. moneyness (only for RBF kernel)
-def diagnostics_greeks(title, naive=False, price=False, tau=2, sigma_tau=0.25, model=None, model_ITM=None, model_OTM=None):
+def diagnostics_greeks(title: str, naive: bool = False, price: bool = False,
+                       tau: float = 2., sigma_tau: float = 0.25,
+                       model: GaussianProcessPrice = None,
+                       model_ITM: GaussianProcessPrice = None,
+                       model_OTM: GaussianProcessPrice = None) -> NoReturn:
 
     if naive & price:
         delta, computed_delta, s_range = GaussianProcessGreeks(model=model, model_ITM=model_ITM, model_OTM=model_OTM).\
