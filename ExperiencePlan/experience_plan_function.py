@@ -10,8 +10,12 @@ warnings.filterwarnings('ignore')
 
 
 # Tests all possibilities
-def experience_plan(data_sizes, naive_vs_reduced=(True, True), price_vs_pp=(True, True), stand_vs_nostand=(True, True),
-                    iso_vs_aniso=(True, True), kernels=(True, True, True)):
+def experience_plan(data_sizes: list, naive_vs_reduced: Tuple[bool, bool] = (True, True),
+                    price_vs_pp: Tuple[bool, bool] = (True, True),
+                    stand_vs_nostand: Tuple[bool, bool] = (True, True),
+                    iso_vs_aniso: Tuple[bool, bool] = (True, True),
+                    kernels: Tuple[bool, bool, bool] = (True, True, True)) \
+        -> [pd.DataFrame, GaussianProcessPrice, GaussianProcessPrice]:
 
     # 0 - Initialization
     filepath = "C:/Users/Edgelab/PycharmProjects/VanillaOptions/Data/"
@@ -38,7 +42,8 @@ def experience_plan(data_sizes, naive_vs_reduced=(True, True), price_vs_pp=(True
                 data_reduced_price = pd.read_csv(filepath + 'train_reduced_price.csv').sample(data_size)
                 selected_data.append((data_reduced_price, 'reduced', 'price'))
             if price_vs_pp[1]:
-                data_reduced_pp = pd.read_csv(filepath + 'train_reduced_pp.csv').sample(data_size)
+                data_reduced_pp = pd.read_csv(filepath + 'train_reduced_pp.csv')
+                data_reduced_pp = data_reduced_pp[(data_reduced_pp['m']>-5) & (data_reduced_pp['m']<5)].sample(data_size)
                 selected_data.append((data_reduced_pp, 'reduced', 'pp'))
 
         # 1.2 - Standardization and Isotropy
@@ -91,7 +96,10 @@ def experience_plan(data_sizes, naive_vs_reduced=(True, True), price_vs_pp=(True
 
 
 # Train the model
-def train_the_model(kernel, l, data, stand, performances, price_vs_pp, naive_vs_reduced, data_size, iso):
+def train_the_model(kernel: sklearn.gaussian_process.kernels, l: list, data: pd.DataFrame, stand: bool,
+                    performances: pd.DataFrame, price_vs_pp: str, naive_vs_reduced: str, data_size: list, iso: bool)\
+        -> [pd.DataFrame, GaussianProcessPrice, GaussianProcessPrice]:
+
     if price_vs_pp == 'price':
         y_train = data['Call price']
         if naive_vs_reduced == 'naive':
