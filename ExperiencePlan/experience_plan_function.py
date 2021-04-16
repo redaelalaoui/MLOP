@@ -1,8 +1,10 @@
 import warnings
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from sklearn.gaussian_process.kernels import RBF, Matern, RationalQuadratic, DotProduct
+import sklearn
+from sklearn.gaussian_process.kernels import RBF, Matern, RationalQuadratic
 
 from GaussianProcess.GPPrices.gaussian_process_price import GaussianProcessPrice
 
