@@ -15,14 +15,18 @@ warnings.filterwarnings('ignore')
 # Plot the MSE and the training time vs. training size
 def diagnostics_metrics(title: str, df_experiments: pd.DataFrame, hue: str = None, style: str = None) -> NoReturn:
     sns.set_style("whitegrid")
-    fig, axs = plt.subplots(figsize=(10, 4), ncols=2)
+    plt.rcParams['font.size'] = '14'
+    fig, axs = plt.subplots(figsize=(12, 5), ncols=2)
+    plt.subplots_adjust(wspace=0.3)
     # 1 - MSE
     sns.lineplot(x='Training size', y='MSE', data=df_experiments, ax=axs[0], hue=hue,
                  style=style).set(xscale="log", yscale="log")
+    axs[0].set_title('MSE')
 
     # 2 - Training time
     sns.lineplot(x='Training size', y='Training time', data=df_experiments, ax=axs[1], hue=hue,
                  style=style).set(xscale="log", yscale="log")
+    axs[1].set_title('Training time')
 
     plt.savefig(f"Results/diagnostics/{title.lower().replace(' ', '_')}_metrics.png")
     plt.show()
@@ -39,7 +43,9 @@ def diagnostic_function(price_vs_pp: str, title: str, tau: float = 2., sigma_tau
         function(stand=stand, naive=naive, price=price, K=100, r=0.05, tau=tau,
                  sigma_a=sigma_tau/np.sqrt(tau), s_test_lim=(55., 145.))
 
+    plt.rcParams['font.size'] = '14'
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
+    plt.subplots_adjust(wspace=0.3)
 
     axs[0].plot(m_test, y_test, '-g', label='Analytical formula')
     axs[0].plot(m_test, y_pred, '--r', label='Gaussian Process')
@@ -86,7 +92,9 @@ def diagnostics_greeks(title: str, naive: bool = False, price: bool = False,
         delta, computed_delta, s_range = GaussianProcessGreeks(model=None, model_ITM=model_ITM, model_OTM=model_OTM).\
             delta(naive, price, 100, 0.05, tau, sigma_tau/np.sqrt(tau), s_train_lim=(50, 135), s_test_lim=(50, 135))
 
+    plt.rcParams['font.size'] = '14'
     fig, axs = plt.subplots(1, 2, figsize=(10, 4))
+    plt.subplots_adjust(wspace=0.3)
 
     axs[0].plot(s_range, computed_delta, 'b', label='Analytical formula')
     axs[0].plot(s_range, delta, '--r', label='Gaussian process')
