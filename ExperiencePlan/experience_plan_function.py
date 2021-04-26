@@ -44,8 +44,7 @@ def experience_plan(data_sizes: list, naive_vs_reduced: Tuple[bool, bool] = (Tru
                 data_reduced_price = pd.read_csv(filepath + 'train_reduced_price.csv').sample(data_size)
                 selected_data.append((data_reduced_price, 'reduced', 'price'))
             if price_vs_pp[1]:
-                data_reduced_pp = pd.read_csv(filepath + 'train_reduced_pp.csv')
-                data_reduced_pp = data_reduced_pp[(data_reduced_pp['m']>-5) & (data_reduced_pp['m']<5)].sample(data_size)
+                data_reduced_pp = pd.read_csv(filepath + 'train_reduced_pp.csv').sample(data_size)
                 selected_data.append((data_reduced_pp, 'reduced', 'pp'))
 
         # 1.2 - Standardization and Isotropy
