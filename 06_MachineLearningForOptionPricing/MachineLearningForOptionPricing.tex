@@ -1,0 +1,874 @@
+% !TeX spellcheck = en_GB
+\documentclass[fleqn, aspectratio=169]{beamer}
+\usetheme{Boadilla} % <-
+%\usetheme{Malmoe} % <-
+
+
+\usepackage{graphicx}
+\usepackage{psfrag}
+\usepackage{amsmath}
+%\usepackage{amscd}
+%\usepackage{epsfig}
+%\usepackage{dcolumn}
+%\usepackage{pslatex}
+\usepackage{color}
+\usepackage{epstopdf}
+\usepackage{booktabs}
+
+\setlength{\unitlength}{1mm}
+\setbeamersize{text margin left=3mm}
+\setbeamersize{text margin right=3mm}
+\setbeamertemplate{navigation symbols}{}
+
+\parskip 2ex  % skip some length before paragraph
+
+\newlength{\figheight}
+\setlength{\figheight}{0.84\textheight}
+
+ %\setlength{\arraycolsep}{5ex}  % for table
+ \renewcommand{\arraystretch}{1.2}  % for table
+
+%\def\Cnst{\mbox{Cnst}}
+\newcommand{\dt}{\delta t}
+\newcommand{\DT}{\Delta\! T}
+\newcommand{\todo}[1]{\textcolor{red}{Todo}: #1}
+
+\newenvironment{itemize1}{
+    \begin{list}{$\bullet$}{
+      \setlength\itemsep{0.2ex}
+      \setlength\topsep{0.2ex}
+      \setlength\parsep{0.2ex}
+      \setlength\partopsep{0.0ex}
+    }
+}{\end{list}}
+
+\newenvironment{itemize2}{
+    \begin{list}{$-$}{
+      \setlength\itemsep{0.2em}
+      \setlength\topsep{-0.5em}
+      \setlength\parsep{0.2\parsep}
+      \setlength\partopsep{0.2\partopsep}
+    }
+}{\end{list}}
+
+\AtBeginSection[]{
+	\begin{frame}
+		\vfill
+		\centering
+		\begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+			\usebeamerfont{title}\insertsectionhead\par%
+		\end{beamercolorbox}
+		\vfill
+	\end{frame}
+}
+
+\begin{document}
+
+%=====================================================
+
+ \title{Machine learning for option pricing}
+\author[Propretary of EdgeLab, do not redistribute]{Reda El Alaoui, Gilles Zumbach}
+\institute[]{EdgeLab, Lausanne}
+\date{May 2021}
+
+\begin{frame}
+\includegraphics[width = 0.17\textwidth]{figures/EDGELAB_Logo_Positive_RVB_WEB.png}\\
+\titlepage
+
+{\tiny This document is proprietary of Edgelab (Edge Laboratories AG)\\[-1.9ex] and should not be disclosed without written permission.}
+\end{frame}
+
+%=====================================================
+
+\begin{frame}{Outline}
+
+\begin{enumerate}
+	\item \textbf{Vanilla option pricing}\\
+	Brief reminder of the Black and Scholes formula and introduction of the price premium
+    \item \textbf{Gaussian process}\\
+    General concepts of Gaussian process
+    \item \textbf{Machine learning for option pricing}\\
+    Adaptation of the Gaussian process theory to option pricing
+    %\item \textbf{Gaussian process applied on a vanilla call option}\\
+    %Application of the theory to a simple case
+    \item \textbf{Barrier options}\\
+    Application of search results to an exotic option
+    \item \textbf{Conclusions}
+\end{enumerate}
+\end{frame}
+
+% ______________________________________________
+
+\section{Introduction}
+
+\begin{frame}
+\frametitle{Introduction}
+
+\textbf{Objectives}
+    \begin{itemize}
+        \item Use ML techniques to \textbf{build a representation of pricing functions}.
+        \item Evaluate the \textbf{Greeks} of the financial product.
+        \item Implement a pricer \textbf{less expensive} in time, while \textbf{maintaining a good level of presicion}.
+    \end{itemize}
+
+\textbf{Selection of the machine learning model}
+    \begin{itemize}
+        \item \textbf{Gaussian process} (GP): allows to evaluate analytically the derivatives (Greeks).
+        \item \textbf{Neural Networks} (NN): the Greeks are only accessible by the finite difference method. 
+        \item The finite differences \textbf{amplify this noise}.
+    \end{itemize}
+    
+    % Derivative pricing is time-consuming, and markets are continiuously moving. Prices can be outdated when available, risk calculation cannot be completed in time
+    
+\end{frame}
+
+% ================================================
+
+\section{Vanilla options}
+
+\begin{frame}
+    \frametitle{European Options}
+    
+    % 5 inputs and 1 output
+    \begin{itemize}
+        \item \textbf{Black and Scholes} formula for a \textbf{call option}:
+    \begin{equation}
+        C(S, K, r, \tau, \sigma_{a}) = S \, \Phi(d_{1}) - K \, e^{-r \, \tau} \, \Phi(d_{2})
+    \end{equation}
+    
+    Where
+    \begin{align*}
+        d_1 & = \frac{1}{\sigma_a \sqrt{\tau}} \left[ \ln\left(\frac{S}{K}\right) + \left(r + \frac{\sigma^2_a}{2}\right) \tau\right]  \nonumber \\
+        d_2 & = d_1 - \sigma_a \sqrt{\tau} \nonumber
+    \end{align*}
+    
+    \item Due to the \textbf{curse of dimentionality}, we must reduce the features dimension.
+    
+    %We study black and scholes to understand how the model works, to understand the influences of our model choices. Once the theory and the basics are acquired, we can adapt the study to more complicated products 
+    \end{itemize}
+\end{frame}
+
+% _____________________________________
+
+\begin{frame}
+\frametitle{Reduced variables}
+
+\begin{itemize}
+    \item The \textbf{call price} can be rewritten in the compact form:
+    \begin{equation}
+        e^{r \, \tau} C/K = e^{m \, \sigma_{\tau}}\Phi(d_{+}) - \Phi(d_{-})
+    \end{equation}
+    
+    where 
+    \begin{align}
+		  F &= S \, e^{r \, \tau} & \text{forward price} \nonumber \\ 
+        m &= \frac{\ln(F/K)}{\sigma_{\tau}}& \text{moneyness}  \nonumber \\
+		         d_{\pm} &= m \pm \sigma_{\tau}/2 &  \nonumber \\
+      \sigma_{\tau} &= \sigma_a \, \sqrt{\tau} & \text{volatility up to the option maturity} \nonumber
+	\end{align}
+    
+    \item \textbf{Features dimension reduction} from \textbf{5 variables} ($S$, $K$, $r$, $\tau$, $\sigma_{a}$) to  \textbf{2 variables} ($m$, $\sigma_{\tau}$).
+    \end{itemize}
+
+\end{frame}
+
+% ____________________________________
+
+\begin{frame}
+\frametitle{Price premium}
+
+\begin{minipage}{0.6\textwidth}
+ 	\begin{center}
+        \begin{figure}
+            \includegraphics[scale=0.65]{figures/pp_plots.pdf}
+        \end{figure}
+ 	\end{center}
+	\end{minipage}  
+	\hspace{-2em}
+	\begin{minipage}[l]{0.35\textwidth}
+    	\vspace{-1.5em}
+    	The \textbf{price premium} is defined as:
+        \begin{align}
+            pp_{\text{}}(m, \sigma_{\tau}) & = \frac{e^{r\tau} C -  \left[F - K\right]^+}{K} \nonumber \\
+            & \nonumber \\
+            pp_{\text{r}}(m, \sigma_{\tau}) & = pp_{\text{}}(m, \sigma_{\tau}) / \sigma_{\tau} \nonumber
+        \end{align}
+    \end{minipage}
+
+\begin{itemize}
+    \item The use of the relative price premium allows us to \textbf{eliminate the dependence of the target on} $\sigma_{\tau}$. The new target only depends on the moneyness $m$.\\
+    % This allows us to \textbf{reduce the dimension} of the inputs even further.
+    
+    \item The \textbf{asymptotic behavior} of the call in-the-money is \textbf{removed}. Learning the model will therefore be easier for the Gaussian process. 
+    % We will use the same principle for more complex products, as we will see in the case of a barrier option.  
+\end{itemize}
+
+\end{frame}
+
+% ================================================
+
+\section{Gaussian Process}
+
+\begin{frame}
+
+\frametitle{Gaussian process regression}
+
+\textbf{Core idea}
+\vspace{-1em}
+\begin{itemize}
+    \item Training set: $(\pmb{X}, \pmb{y}) = \{(\pmb{x}_i, y_i)\, | \, i=1,\ldots ,n\}$
+    \begin{itemize}
+        \item $\pmb{x}_i$ is an input vector of dimension d
+        \item $\pmb{y}_i$ is the corresponding output
+    \end{itemize}
+    
+    \item The goal is to find the relation between inputs and outputs.
+    $$y_i = f(x_i) + \epsilon_i$$
+    where $f(\pmb{x})$ is a \textbf{Gaussian process} and $\epsilon_i \sim \mathcal{N}(0, \sigma_n^2)$ are i.i.d. random variables representing the \textbf{noise in the data}.
+\end{itemize}
+
+\vspace{-0.7em}
+
+\begin{figure} 
+    \includegraphics[scale=0.53]{figures/gaussian_process.PNG}
+\end{figure}
+
+\end{frame}
+
+% ______________________________________
+
+\begin{frame}
+\frametitle{Gaussian process regression}
+
+\begin{itemize}
+    \item f(x) is a Gaussian process, characterized by two functions:
+    \begin{itemize}
+        \item mean function: $m(x) = \mathbb{E}[f(x)]$
+        \item kernel function: $\kappa(x, x') = \text{Cov}(f(x), \, f(x'))$
+    \end{itemize}
+    
+    % One often assumes a zero mean function.
+    
+    $$\pmb{f} \sim \mathcal{N}(0, K(X,\, X))$$
+    
+    \item Where $K(X,\,X)$ is the \textbf{covariance matrix}.
+    $$K = \begin{bmatrix}
+            \kappa(x_1, x_1) & \cdots &  \kappa(x_1, x_n)\\
+            \vdots &  \ddots &  \vdots \\
+            \kappa(x_n, x_1) & \cdots &  \kappa(x_n, x_n)
+            \end{bmatrix}$$
+    $K$ a $N\times N$ matrix which represents the pairwise similarities (With N, the number of inputs).
+\end{itemize}
+
+\end{frame}
+
+% ______________________________________
+
+\begin{frame}
+\frametitle{Gaussian process regression: a Bayesian method}
+\textcolor{red}{à garder ?}
+\begin{itemize}
+    \item Don't model the relation as one function, but as a distribution over functions.
+
+    \item Process:
+    \begin{itemize}
+        \item Start from a prior GP
+        \begin{itemize}
+            \item prior knowledge: smooth function, periodic function, ...
+        \end{itemize}
+        \item Include observed data point
+        \item Compute a posterior GP (Model training)
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+% ____________________________________
+
+\begin{frame}
+\frametitle{Posterior distribution}
+
+\begin{itemize}
+    \item New inputs $X_{*}$, with corresponding (unknow) function $f_{*}$.
+    \item Joint distribution of training outputs and function values:
+    \begin{align}
+        \begin{bmatrix}
+            \pmb{y} \\
+            \pmb{f}_{*}
+        \end{bmatrix} & 
+        \sim \mathcal{N}\left(\textbf{0}, 
+        \begin{bmatrix}
+            K(X, \, X) + \sigma_{n}^{2}I &  K(X, \, X_{*})\\
+            K(X_{*}, \, X) & K(X_{*}, \, X_{*})
+        \end{bmatrix} \right) \nonumber
+    \end{align}
+    
+    \item Condition on the observations:
+    
+    \begin{equation}
+        \pmb{f}_{*} | X_{*}, X, \pmb{y} \sim \mathcal{N}(\pmb{\mu}, \Sigma) \nonumber
+    \end{equation}
+    
+    where
+    \begin{align}
+        \pmb{\mu} & = K\left(X_{*}, X \right)\left[K \left(X, X \right) + \sigma_{n}^{2}I \right]^{-1}\pmb{y} \nonumber \\
+        \Sigma & = K\left(X_{*}, X_{*} \right) - K\left(X_{*}, X \right)\left[K \left(X, X \right) + \sigma_{n}^{2}I \right]^{-1}K\left(X, X \right) \nonumber 
+    \end{align}
+    
+\end{itemize}
+
+\end{frame}
+
+% ____________________________________
+
+\begin{frame}
+\frametitle{Covariance functions: Kernels}
+
+\begin{itemize}
+    \item \textbf{Kernel functions} can be interpreted as \textbf{measure of similarity} between two sets of features. This is a positive-definite function of two inputs: $x$ and $x$'.\\
+
+    \item \textbf{Gaussian kernel (Radial Basis Function)}
+        \begin{equation}
+            \kappa(\textbf{x}, \textbf{x}') = \exp(-\frac{1}{2\ell^{2}}||\textbf{x} - \textbf{x}'||^{2})
+        \end{equation}
+    
+    Where
+    \begin{itemize}
+        \item $\ell$ is a length-scale parameter (hyperparameter) that determines the smoothness of the fit. %determines how far you need to move in input space for the function values to be uncorrelated. 
+    \end{itemize}
+    
+    % In the case of a \textbf{European call option}, $x_i$ and $x_j$' are both \textbf{5×1 feature vectors} composed of the underlying spot price, the strike price, the risk-free interest rate, the maturity and the volatility.\\
+
+\end{itemize}
+
+\end{frame}
+
+% _________________________________
+
+\begin{frame}
+\frametitle{Hyperparameters selection}
+
+\begin{itemize}
+    \item Gaussian processes are fit to the data by optimizing the marginal probability of the data given the model with respect to the learned kernel hyperparameters.
+    % Each kernel has a number of hyperparameters which specify the precise shape of the covariance function.
+
+    
+    %It is important to find the right value of lenghtscale to decide which points should be considered similar and this can be demonstrated on a case by case basis
+    
+    \item Hyperparameters need to be estimated from the \textbf{training data} by a \textbf{maximum likelihood estimation}.
+    \begin{align}
+        \log p(\pmb{y} | X, \theta) = - \frac{1}{2}\log(\det(K(X, X))) - \frac{1}{2}\pmb{y}^TK(X, X)^{-1}\pmb{y} -\frac{1}{2} N \log(2\pi)
+    \end{align}
+    Where $\theta$ is the hyperparameter vector, cointaining $\ell$ in the RBF case. 
+
+\end{itemize}
+
+\end{frame}
+
+% _______________________
+
+\begin{frame}
+\frametitle{Kernels: Anisotropic or isotropic ?}
+
+\begin{itemize}
+\item \textbf{Isotropic}:
+    \begin{align}
+        \kappa(\textbf{x}, \textbf{x}')  & = \exp\left(-\frac{1}{2\textcolor{red}{\ell^{2}}} \,  \Sigma^D_{d=1} (\textbf{x}_d - \textbf{x}'_d)^{2}\right) \nonumber    
+    \end{align}
+
+    \item \textbf{Anisotropic}:\\
+    Different correlation length for each dimension.
+    \begin{align}
+        \kappa(\textbf{x}, \textbf{x}')  & = \exp\left(-\frac{1}{2} \,  \Sigma^D_{d=1} \frac{(\textbf{x}_d - \textbf{x}'_d)^{2}}{\textcolor{red}{\ell^2_d}}\right) \nonumber
+    \end{align}
+    
+    \textbf{Anisotropic kernel}: allows to correctly evaluate the variations' influence of each variable.
+    \vspace{0.4cm}
+
+    \item \textbf{Conclusion}: The calculation of greeks will be more accurate with an anisotropic kernel.
+
+\end{itemize}
+
+\end{frame}
+
+% _________________________________
+
+\begin{frame}
+\frametitle{Standardization}
+
+\begin{itemize}
+    \item \textbf{Scale parameters} in covariance functions.
+    \begin{align}
+        \kappa(\textbf{x}, \textbf{x}') = \exp(-\frac{1}{2\ell^{2}}||\textbf{x} - \textbf{x}'||^{2}) \nonumber
+    \end{align}
+    
+    \item Concerned about using a single $\ell$ when one dimension a range \textbf{1000 times} the other one. The \textbf{kernel will "care"} about the \textbf{bigger scales} as much as it does about the \textbf{smaller slaces}.
+    \vspace{0.4cm}
+    
+    \item \textbf{Conclusion}: The data must me standardize so each dimension is on the same scale.
+\end{itemize}
+
+\end{frame}
+
+% ___________________________________________
+
+\begin{frame}{Features selection}
+
+\begin{minipage}{0.4\textwidth}
+\textbf{Greedy feature selections}
+    \begin{itemize}
+        \item \textbf{Iterative method}.
+        \item Start with the best performing variable against the target.
+        \item Select another variable that gives the best performance in combination with the first selected variable. 
+        \item This process continues until the preset criterion is achieved (e.g. min of explained variance).
+        \vspace{0.1cm}
+        \item Algorithm from \textbf{Risk Drivers}
+        
+         %   \item Choose a model (Gaussian process). 
+         %   \item Select a loss/scoring function (MSE). 
+         %   \item Iteratively evaluate each feature and add it to the list of “good” features if it improves loss/score
+    \end{itemize}
+\end{minipage}  
+\hspace{0.7em}
+\begin{minipage}[l]{0.5\textwidth}
+    \begin{figure} 
+    \vspace{1em}
+        \includegraphics[scale=0.23]{figures/correlation_matrix.pdf}
+    \end{figure}
+\end{minipage}
+
+\end{frame}
+
+% ================================================
+
+%\section{Machine learning for option pricing}
+
+% ================================================
+
+\section{Gaussain process applied on a vanilla call option}
+
+\begin{frame}
+\frametitle{Principle}
+
+\begin{itemize}
+    \item \textbf{Build a training set}\\
+    Sample parameter combinations and calculate corresponding prices.
+    
+    \vspace{0.2cm}
+    
+    \item \textbf{Train a GPR model}\\
+    Hyperparameters optimization.
+    
+    \begin{figure}
+        \includegraphics[scale=0.45]{figures/gaussian_process_pp.PNG}
+    \end{figure}
+    
+    \vspace{0.2cm}
+    
+    \item \textbf{Construct a test set}\\
+    Similarly to training set construction.\\
+    Higher parameters intervals.
+    % to evaluate the performances of our model at the limits of our ranges
+    
+\end{itemize}
+
+\end{frame}
+
+% _______________________________________________
+
+\begin{frame}
+\frametitle{Data set creation}
+
+\begin{itemize}
+    %  The modelling procedure starts by constructing a training set (X, y)
+    \item \textbf{Input matrix} $\pmb{X}$: $n$ random parameter combinations are sampled uniformly over the ranges given in Table 1.
+    %  consists
+
+    \item \textbf{Target vector} $\pmb{y}$: For each parameter combination, the \textbf{price of the European call option} is calculated with the BS formula.
+    %The training set is then fed to the algorithm that fits the GPR model
+
+\begin{center}
+    \begin{table}
+        \begin{tabular}{| c| c| c|}
+        \hline
+        Variable & Range & Dimension\\ 
+        \hline
+        $S$ - Spot price & 40 $\rightarrow$ 120 & $\$$\\
+        \hline  
+        $K$ - Strike price & 50 $\rightarrow$ 100 & $\$$ \\
+        \hline
+        $\tau$ - Time to maturity & 1/255 $\rightarrow$ 5 & Year \\
+        \hline
+        $r$ - Risk free rate & 0.1$\%$ $\rightarrow$ 10$\%$ & - \\
+        \hline
+        $\sigma_{a}$ - Volatility & 0.1$\%$ $\rightarrow$ 50$\%$ & - \\
+        \hline
+        \end{tabular}
+    \caption{\label{tab:Table 1}Ranges for training set.}
+    \end{table}
+\end{center}
+
+\end{itemize}
+
+\end{frame}
+
+% _________________________________
+
+\begin{frame}
+\frametitle{Design of Experiments}
+
+\begin{itemize}
+\item \textbf{Hypotheses}
+    \begin{itemize}
+        \item The \textbf{dimension reduction} should improve the training time.
+        \item \textbf{Price premium} should facilitate the learning process and improve the accuracy of the model.
+        \item An \textbf{anisotropic kernel} on \textbf{standardized data} should give better results.
+    \end{itemize}
+
+    \vspace{0.5em}
+    
+    \item \textbf{Design of experiment}
+    \begin{itemize}
+        \item \textbf{Input}: Natural or Reduce variables.
+        \item \textbf{Target}: Call price or price premium.
+        \item \textbf{Kerel}: Isotropic or anisotropic.
+        \item \textbf{Data}: Standardized or not.
+    \end{itemize}
+
+    \vspace{0.5em}
+    
+    \item \textbf{Performance measures}
+    \begin{itemize}
+        \item Mean Squared Error (MSE) vs. Training size.
+        \item Training time vs. Training size. \textcolor{red}{(à laisser ?)}
+        \item Price premium error vs. moneyness.
+        \item Delta error vs. moneyness.
+    \end{itemize}
+\end{itemize}
+
+\end{frame}
+
+% _________________________________
+
+\begin{frame}
+\frametitle{Results of experiments }
+
+\begin{minipage}{0.5\textwidth}
+    \textbf{Parameters} 
+    \begin{itemize}
+        \item Gaussian kernel (RBF)
+        \item Anisotropic kernel
+        \item Standardized data
+        \item GPR model trained on 2000 samples
+        \item Tested on 1000 samples
+    \end{itemize}
+\end{minipage}  
+\hspace{-2em}
+\begin{minipage}[l]{0.5\textwidth}
+    \textbf{Simulation results}\\
+    
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Input/Target} & \textbf{MSE}\\
+        \hline
+        Natural x Call price & $10^{-2}$\\
+        \hline
+        Reduced x Call price & $10^{2}$\\
+        \hline
+        Natural x Price Premium & $10^{-4}$\\
+        \hline
+        \textbf{\textcolor{blue}{Reduced x Price Premium}} & \textcolor{blue}{$10^{-13}$} \\
+        \hline
+    \end{tabular}
+\end{minipage}
+
+\vspace{1em}
+
+\textbf{Conclusions}
+\vspace{-1em}
+\begin{itemize}
+    \item \textbf{Dimension reduction} give better results.
+    \item Use of a \textbf{bijective function} (price premium) reduce the MSE.
+\end{itemize}
+
+\end{frame}
+
+% _________________________________
+
+\begin{frame}{Predicted price premium}
+
+\textbf{Train and test data set}
+\vspace{-1em}
+\small{
+\begin{center}
+    \begin{tabular}{| c| c| c|}
+        \hline
+        & \textbf{Variable} & \textbf{Range} \\ 
+        \hline
+        \textbf{Train} & $m$ & -3 $\rightarrow$ 3\\
+        \cline{2-3}
+        & $\sigma_{\tau}$ & 15$\%$ $\rightarrow$ 85$\%$ \\
+        \hline
+        \textbf{Test} & $m$ & -5 $\rightarrow$ 5\\
+        \cline{2-3}
+        & $\sigma_{\tau}$ & 0.1$\%$ $\rightarrow$ 100$\%$ \\
+        \hline
+    \end{tabular}
+\end{center}
+}
+
+\vspace{-0.5em}
+
+\textbf{Model's performance measures} 
+\vspace{-1em}
+\begin{figure}
+    \includegraphics[scale=0.4]{figures/price_premium_metrics.pdf}
+\end{figure}
+
+\end{frame}
+
+% _________________________________
+
+\begin{frame}{Predicted price premium}
+
+\begin{figure}
+    \includegraphics[scale=0.5]{figures/reduced_pp_stand_aniso_rbf_0_2_function.pdf}
+\end{figure}
+
+\end{frame}
+
+% _________________________________
+
+\begin{frame}
+\frametitle{Greeks}
+
+\vspace{1.5em}
+
+\begin{columns}
+    \begin{column}{0.45 \textwidth}
+        \textbf{Analytical derivatives}
+        %The GP provides analytic derivatives with respect to the input variables.
+        \begin{align}
+        K_{X_{*}, X} &=  \sigma^2 \, exp(-\frac{||x - x'||^2}{2\ell^2}) \nonumber \\
+        \partial_{X_{*}}K_{X_{*}, X} &= \sigma^2 \, \frac{1}{\ell^2}(X - X_{*}) K_{X_{*}, X}  \nonumber
+        \end{align}
+        % Second-order sensitivities are obtained by differentiating once more with respect to X∗.
+    \end{column}
+    
+    \begin{column}{0.5 \textwidth}
+        \textbf{Applied to Delta}
+        \begin{equation}
+            \frac{\partial C}{\partial S} = \left\{
+            \begin{array}{ll}
+            e^{-m\sigma}\frac{\partial pp}{\partial m}  & \mbox{if } e^{m\sigma} \leq 1 \\
+            \\
+            e^{-m\sigma}\frac{\partial pp}{\partial m} + 1 & \mbox{else.}
+            \end{array}
+            \right.
+        \end{equation}
+    \end{column}
+\end{columns}
+
+\textbf{Predicted Delta with price premium approach}
+    % $K = 90;\,\, r = 5\%;\,\, \tau = 1/12 year;\,\, \sigma_a = 15\%$
+\vspace{-0.5em}
+
+\begin{figure}
+    \includegraphics[scale=0.5]{figures/reduced_pp_stand_aniso_rbf_0_2_delta.pdf}
+\end{figure}
+
+\end{frame}
+
+% ===============================================
+
+\section{Barrier options}
+
+\begin{frame}
+\frametitle{Up-and-in call option}
+
+\begin{itemize}
+    \item The payoff depend on the crossing of a predefined barrier level by the underlying asset price. 
+    \item This \textbf{barrier B} induces a discontinuity in the payoff and in the option price. 
+\end{itemize}
+
+\begin{columns}
+    \begin{column}{0.35 \textwidth}
+        \textbf{Payoff}
+        \begin{equation}
+            \left(S_{T} - K\right)^{+}_{\left\{ \displaystyle\max_{0\leq t\leq T} S_t < B\right\}} \nonumber
+        \end{equation}
+    \end{column}
+    
+    \begin{column}{0.5 \textwidth}
+        \begin{figure}[H]
+            \includegraphics[scale=0.45]{figures/cui_payout.pdf}
+        \end{figure}
+    \end{column}
+\end{columns}
+
+\end{frame}
+
+% _________________________
+
+\begin{frame}
+\frametitle{Analytical formula of an Up-and-in call option}
+
+\textbf{For B $\geq$ K}\\
+The time-0 value of an up-and-in call option is
+\begin{equation}
+    \frac{V_{uic}}{K e^{-r\tau}} = d_{+}(s, B) + \left(\frac{B}{s} \right)^\kappa \left[  d_+(B^2/s; K) - d_+(B^2/s; B) \right]
+\end{equation}
+
+\textbf{For B $\leq$ K}\\
+The time-0 value of an up-and-in call option is the \textbf{ price of a regular call option}.
+\begin{equation}
+    \frac{V_{uic}}{K e^{-r\tau}} = d_{+}(s, K)
+\end{equation}
+
+where
+\vspace{-1em}
+\begin{subequations}
+    \begin{align}
+        d(x, y) & = x \Phi\left(\frac{\log\left(x/y\right) + (r + \sigma^2/2)T}{\sigma \sqrt{T}}\right) - K e^{-r\tau}\Phi\left(\frac{\log\left(x /y\right) + (r - \sigma^2/2)T }{\sigma \sqrt{T}}\right) \nonumber
+    \end{align}
+\end{subequations}
+
+\end{frame}
+
+% _________________________
+
+\begin{frame}
+\frametitle{Analytical formula of an Up-and-in call option}
+
+\textbf{For B $\geq$ K}\\
+
+\begin{columns}
+    \begin{column}{0.45 \textwidth}
+        \begin{figure}[H]
+            \includegraphics[scale=0.33]{figures/cui_B_sup_K.pdf}
+        \end{figure}
+    \end{column}
+
+    \begin{column}{0.45 \textwidth}
+        \begin{figure}[H]
+            \includegraphics[scale=0.33]{figures/cui_pp_B_sup_K.pdf}
+        \end{figure}
+    \end{column}
+\end{columns}
+
+\vspace{-1em}
+
+\textbf{For B $\leq$ K}\\
+
+\begin{columns}
+    \begin{column}{0.45 \textwidth}
+        \begin{figure}[H]
+            \includegraphics[scale=0.33]{figures/cui_B_inf_K.pdf}
+        \end{figure}
+    \end{column}
+    
+    \begin{column}{0.45 \textwidth}
+        \begin{figure}[H]
+            \includegraphics[scale=0.33]{figures/cui_pp_B_inf_K.pdf}
+        \end{figure}
+    \end{column}
+\end{columns}
+
+\end{frame}
+
+%__________________________________________
+
+\begin{frame}
+\frametitle{Results of experiments for B $\geq$ K}
+
+\begin{minipage}{0.5\textwidth}
+    \textbf{Parameters} 
+    \begin{itemize}
+        \item Gaussian kernel (RBF)
+        \item Anisotropic kernel
+        \item Standardized data
+        \item GPR model trained on 2000 samples
+        \item Tested on 1000 samples
+    \end{itemize}
+\end{minipage}  
+\hspace{-1em}
+\begin{minipage}[l]{0.5\textwidth}
+    \textbf{Simulation results}\\
+    
+    \begin{tabular}{|l|l|}
+        \hline
+        \textbf{Input/Target} & \textbf{MSE}\\
+        \hline
+        Natural x Up-and-in call price & $10^{-2}$\\
+        \hline
+        \textbf{\textcolor{blue}{Reduced x Price premium}} & \textcolor{blue}{$10^{-7}$} \\
+        \hline
+    \end{tabular}
+\end{minipage}
+
+\vspace{1em}
+
+\textbf{Conclusions}
+\vspace{-1em}
+\begin{itemize}
+    \item conclu 1
+    \item conclu 2
+\end{itemize}
+
+\end{frame}
+
+% ____________________________________________
+
+\begin{frame}
+\frametitle{Predicted price premium}
+
+\begin{figure}
+    \includegraphics[scale=0.5]{figures/up_and_in_call.pdf}
+\end{figure}
+
+\end{frame}
+
+% ____________________________________________
+
+\begin{frame}
+\frametitle{Noisy data}
+
+\begin{itemize}
+    \item Noise induced by the price calculation via Monte Carlo algorithms
+    \item Simulation of the effect of noise in model training and prediction
+\end{itemize}
+
+\vspace{-1em}
+
+\begin{figure}
+    \includegraphics[scale=0.39]{figures/noise_analysis.pdf}
+\end{figure}
+
+\vspace{-2em}
+
+\textbf{Conclusions}
+\vspace{-1em}
+\begin{itemize}
+    \item Adding Gaussian noise of amplitude $10^{-2}$. 
+    \item The Gaussian process allows to take into account the noise in the input data
+\end{itemize}
+
+\end{frame}
+
+% ===============================================
+
+\section{Conclusion}
+
+\begin{frame}{Conclusion}
+
+\begin{itemize}
+    \item Dimension reduction reduce the MSE
+    \item Bijective function gives better results
+    \item Impact of data standardization
+    \item Importance of the Anisotropy of the kernel (to obtain the greeks)
+    \item The choice of the kernel is finally of little importance
+\end{itemize}
+
+\end{frame}
+
+\end{document}
