@@ -7,6 +7,8 @@
 \usepackage{graphicx}
 \usepackage{psfrag}
 \usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{dsfont}
 %\usepackage{amscd}
 %\usepackage{epsfig}
 %\usepackage{dcolumn}
@@ -142,7 +144,7 @@
         d_2 & = d_1 - \sigma_a \sqrt{\tau} \nonumber
     \end{align*}
     
-    \item Due to the \textbf{curse of dimentionality}, we must reduce the features dimension.
+    \item Due to the \textbf{curse of dimensionality}, we must reduce the features dimension.
     
     %We study black and scholes to understand how the model works, to understand the influences of our model choices. Once the theory and the basics are acquired, we can adapt the study to more complicated products 
     \end{itemize}
@@ -199,7 +201,8 @@
     \item The use of the relative price premium allows us to \textbf{eliminate the dependence of the target on} $\sigma_{\tau}$. The new target only depends on the moneyness $m$.\\
     % This allows us to \textbf{reduce the dimension} of the inputs even further.
     
-    \item The \textbf{asymptotic behavior} of the call in-the-money is \textbf{removed}. Learning the model will therefore be easier for the Gaussian process. 
+    \item The \textbf{asymptotic behavior} of the call in-the-money is \textbf{removed}. A method to learn quickly an effective model can be derived from Gaussian processes.
+    %Learning the model will therefore be easier for the Gaussian process. 
     % We will use the same principle for more complex products, as we will see in the case of a barrier option.  
 \end{itemize}
 
@@ -268,7 +271,7 @@
 \frametitle{Gaussian process regression: a Bayesian method}
 \textcolor{red}{à garder ?}
 \begin{itemize}
-    \item Don't model the relation as one function, but as a distribution over functions.
+    \item Do not model the relation as one function, but as a distribution over functions.
 
     \item Process:
     \begin{itemize}
@@ -349,7 +352,7 @@
 \frametitle{Hyperparameters selection}
 
 \begin{itemize}
-    \item Gaussian processes are fit to the data by optimizing the marginal probability of the data given the model with respect to the learned kernel hyperparameters.
+    \item Gaussian processes are fitted to the data by optimizing the marginal probability of the data given the model with respect to the learned kernel hyperparameters.
     % Each kernel has a number of hyperparameters which specify the precise shape of the covariance function.
 
     
@@ -359,7 +362,7 @@
     \begin{align}
         \log p(\pmb{y} | X, \theta) = - \frac{1}{2}\log(\det(K(X, X))) - \frac{1}{2}\pmb{y}^TK(X, X)^{-1}\pmb{y} -\frac{1}{2} N \log(2\pi)
     \end{align}
-    Where $\theta$ is the hyperparameter vector, cointaining $\ell$ in the RBF case. 
+    Where $\theta$ is the hyperparameter vector, containing $\ell$ in the RBF case. 
 
 \end{itemize}
 
@@ -402,10 +405,10 @@
         \kappa(\textbf{x}, \textbf{x}') = \exp(-\frac{1}{2\ell^{2}}||\textbf{x} - \textbf{x}'||^{2}) \nonumber
     \end{align}
     
-    \item Concerned about using a single $\ell$ when one dimension a range \textbf{1000 times} the other one. The \textbf{kernel will "care"} about the \textbf{bigger scales} as much as it does about the \textbf{smaller slaces}.
+    \item The use of a single $\ell$ is not optimal when one dimension have a range \textbf{1000 times} the other one. The \textbf{kernel will "care"} much more about \textbf{bigger scales} as it does about the \textbf{smaller ones}.
     \vspace{0.4cm}
     
-    \item \textbf{Conclusion}: The data must me standardize so each dimension is on the same scale.
+    \item \textbf{Conclusion}: The data must be standardized so each dimension is on the same scale.
 \end{itemize}
 
 \end{frame}
@@ -415,7 +418,7 @@
 \begin{frame}{Features selection}
 
 \begin{minipage}{0.4\textwidth}
-\textbf{Greedy feature selections}
+\textbf{Greedy features selection}
     \begin{itemize}
         \item \textbf{Iterative method}.
         \item Start with the best performing variable against the target.
@@ -445,7 +448,7 @@
 
 % ================================================
 
-\section{Gaussain process applied on a vanilla call option}
+\section{Gaussian process applied on a vanilla call option}
 
 \begin{frame}
 \frametitle{Principle}
@@ -518,7 +521,7 @@
 \frametitle{Design of Experiments}
 
 \begin{itemize}
-\item \textbf{Hypotheses}
+\item \textbf{Hypothesis}
     \begin{itemize}
         \item The \textbf{dimension reduction} should improve the training time.
         \item \textbf{Price premium} should facilitate the learning process and improve the accuracy of the model.
@@ -529,7 +532,7 @@
     
     \item \textbf{Design of experiment}
     \begin{itemize}
-        \item \textbf{Input}: Natural or Reduce variables.
+        \item \textbf{Input}: Natural or Reduced variables.
         \item \textbf{Target}: Call price or price premium.
         \item \textbf{Kerel}: Isotropic or anisotropic.
         \item \textbf{Data}: Standardized or not.
@@ -587,8 +590,8 @@
 \textbf{Conclusions}
 \vspace{-1em}
 \begin{itemize}
-    \item \textbf{Dimension reduction} give better results.
-    \item Use of a \textbf{bijective function} (price premium) reduce the MSE.
+    \item \textbf{Dimension reduction} gives better results.
+    \item Use of a \textbf{bijective function} (price premium) reduces the MSE.
 \end{itemize}
 
 \end{frame}
@@ -695,7 +698,7 @@
     \begin{column}{0.35 \textwidth}
         \textbf{Payoff}
         \begin{equation}
-            \left(S_{T} - K\right)^{+}_{\left\{ \displaystyle\max_{0\leq t\leq T} S_t < B\right\}} \nonumber
+            \left(S_{T} - K\right)^{+}\, \mathds{1}_{\left\{ \displaystyle\max_{0\leq t\leq T} S_t < B\right\}} \nonumber
         \end{equation}
     \end{column}
     
